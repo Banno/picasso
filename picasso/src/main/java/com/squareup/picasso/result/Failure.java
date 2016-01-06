@@ -7,7 +7,7 @@ public abstract class Failure {
     public abstract Throwable getCause();
 
     public interface Visitor<T> {
-        T visit(HttpFailure HttpFailure);
+        T visit(HttpFailure httpFailure);
 
         T visit(GenericFailure genericFailure);
     }

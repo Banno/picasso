@@ -357,7 +357,7 @@ class Dispatcher {
       //noinspection ThrowableResultOfMethodCallIgnored
       hunter.getFailure().accept(new Failure.Visitor<Void>() {
         @Override
-        public Void visit(HttpFailure HttpFailure) {
+        public Void visit(HttpFailure httpFailure) {
           return null;
         }
 
