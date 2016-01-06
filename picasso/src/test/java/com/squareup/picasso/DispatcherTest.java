@@ -25,6 +25,9 @@ import android.os.Message;
 import com.squareup.picasso.NetworkRequestHandler.ContentLengthException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
+
+import com.squareup.picasso.result.Failure;
+import com.squareup.picasso.result.GenericFailure;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -175,14 +178,15 @@ public class DispatcherTest {
   @Test public void performSubmitWithFetchActionWithErrorCompletionCallback() {
     String pausedTag = "pausedTag";
     Callback callback = mockCallback();
+    Failure failure = mock(Failure.class);
 
     FetchAction fetchAction =
         new FetchAction(mockPicasso(), new Request.Builder(URI_1).build(), 0, 0, pausedTag,
             URI_KEY_1, callback);
     dispatcher.performSubmit(fetchAction, false);
-    fetchAction.error();
+    fetchAction.error(failure);
 
-    verify(callback).onError();
+    verify(callback).onError(failure);
   }
 
   @Test public void performCancelWithFetchActionWithCallback() {
@@ -308,7 +312,7 @@ public class DispatcherTest {
     NetworkInfo networkInfo = mockNetworkInfo(true);
     BitmapHunter hunter = mockHunter(URI_KEY_2, bitmap1, false);
     when(hunter.shouldRetry(anyBoolean(), any(NetworkInfo.class))).thenReturn(true);
-    when(hunter.getException()).thenReturn(new ContentLengthException("304 error"));
+    when(hunter.getFailure()).thenReturn(new GenericFailure(new ContentLengthException("304 error")));
     when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
     dispatcher.performRetry(hunter);
     assertThat(NetworkPolicy.shouldReadFromDiskCache(hunter.networkPolicy)).isFalse();

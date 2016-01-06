@@ -136,12 +136,12 @@ public class BitmapHunterTest {
     try {
       hunter.run();
     } catch (Throwable t) {
-      Exception exception = hunter.getException();
+      Throwable throwable = hunter.getFailure().getCause();
       verify(dispatcher).dispatchFailed(hunter);
       verify(stats).createSnapshot();
       assertThat(hunter.getResult()).isNull();
-      assertThat(exception).isNotNull();
-      assertThat(exception.getCause()).isInstanceOf(OutOfMemoryError.class);
+      assertThat(throwable).isNotNull();
+      assertThat(throwable.getCause()).isInstanceOf(OutOfMemoryError.class);
     }
   }
 

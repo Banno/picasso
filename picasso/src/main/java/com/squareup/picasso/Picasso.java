@@ -29,6 +29,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
+import com.squareup.picasso.result.Failure;
 
 import java.io.File;
 import java.lang.ref.ReferenceQueue;
@@ -70,7 +71,7 @@ public class Picasso {
      * Invoked when an image has failed to load. This is useful for reporting image failures to a
      * remote analytics service, for example.
      */
-    void onImageLoadFailed(Picasso picasso, Uri uri, Exception exception);
+    void onImageLoadFailed(Picasso picasso, Uri uri, Failure failure);
   }
 
   /**
@@ -541,24 +542,24 @@ public class Picasso {
     }
 
     Uri uri = hunter.getData().uri;
-    Exception exception = hunter.getException();
+    Failure failure = hunter.getFailure();
     Bitmap result = hunter.getResult();
     LoadedFrom from = hunter.getLoadedFrom();
 
     if (single != null) {
-      deliverAction(result, from, single);
+      deliverAction(result, from, single, failure);
     }
 
     if (hasMultiple) {
       //noinspection ForLoopReplaceableByForEach
       for (int i = 0, n = joined.size(); i < n; i++) {
         Action join = joined.get(i);
-        deliverAction(result, from, join);
+        deliverAction(result, from, join, failure);
       }
     }
 
-    if (listener != null && exception != null) {
-      listener.onImageLoadFailed(this, uri, exception);
+    if (listener != null && failure != null) {
+      listener.onImageLoadFailed(this, uri, failure);
     }
   }
 
@@ -570,7 +571,7 @@ public class Picasso {
 
     if (bitmap != null) {
       // Resumed action is cached, complete immediately.
-      deliverAction(bitmap, MEMORY, action);
+      deliverAction(bitmap, MEMORY, action, null);
       if (loggingEnabled) {
         log(OWNER_MAIN, VERB_COMPLETED, action.request.logId(), "from " + MEMORY);
       }
@@ -583,7 +584,7 @@ public class Picasso {
     }
   }
 
-  private void deliverAction(Bitmap result, LoadedFrom from, Action action) {
+  private void deliverAction(Bitmap result, LoadedFrom from, Action action, Failure failure) {
     if (action.isCancelled()) {
       return;
     }
@@ -599,7 +600,9 @@ public class Picasso {
         log(OWNER_MAIN, VERB_COMPLETED, action.request.logId(), "from " + from);
       }
     } else {
-      action.error();
+      if (failure != null) {
+        action.error(failure);
+      }
       if (loggingEnabled) {
         log(OWNER_MAIN, VERB_ERRORED, action.request.logId());
       }

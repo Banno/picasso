@@ -16,6 +16,7 @@
 package com.squareup.picasso;
 
 import android.graphics.Bitmap;
+import com.squareup.picasso.result.Failure;
 
 class FetchAction extends Action<Object> {
 
@@ -35,9 +36,9 @@ class FetchAction extends Action<Object> {
     }
   }
 
-  @Override void error() {
+  @Override void error(Failure failure) {
     if (callback != null) {
-      callback.onError();
+      callback.onError(failure);
     }
   }
 

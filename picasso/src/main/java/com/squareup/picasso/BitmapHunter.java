@@ -21,6 +21,10 @@ import android.graphics.Matrix;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.view.Gravity;
+import com.squareup.picasso.result.Failure;
+import com.squareup.picasso.result.GenericFailure;
+import com.squareup.picasso.result.HttpFailure;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -92,7 +96,7 @@ class BitmapHunter implements Runnable {
   Bitmap result;
   Future<?> future;
   Picasso.LoadedFrom loadedFrom;
-  Exception exception;
+  Failure failure;
   int exifOrientation; // Determined during decoding of original resource.
   int retryCount;
   Priority priority;
@@ -176,22 +180,22 @@ class BitmapHunter implements Runnable {
       }
     } catch (Downloader.ResponseException e) {
       if (!e.localCacheOnly || e.responseCode != 504) {
-        exception = e;
+        failure = new HttpFailure(e.responseCode, e);
       }
       dispatcher.dispatchFailed(this);
     } catch (NetworkRequestHandler.ContentLengthException e) {
-      exception = e;
+      failure = new GenericFailure(e);
       dispatcher.dispatchRetry(this);
     } catch (IOException e) {
-      exception = e;
+      failure = new GenericFailure(e);
       dispatcher.dispatchRetry(this);
     } catch (OutOfMemoryError e) {
       StringWriter writer = new StringWriter();
       stats.createSnapshot().dump(new PrintWriter(writer));
-      exception = new RuntimeException(writer.toString(), e);
+      failure = new GenericFailure(new RuntimeException(writer.toString(), e));
       dispatcher.dispatchFailed(this);
     } catch (Exception e) {
-      exception = e;
+      failure = new GenericFailure(e);
       dispatcher.dispatchFailed(this);
     } finally {
       Thread.currentThread().setName(Utils.THREAD_IDLE_NAME);
@@ -392,8 +396,8 @@ class BitmapHunter implements Runnable {
     return actions;
   }
 
-  Exception getException() {
-    return exception;
+  Failure getFailure() {
+    return failure;
   }
 
   Picasso.LoadedFrom getLoadedFrom() {

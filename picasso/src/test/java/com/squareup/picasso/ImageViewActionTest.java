@@ -19,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
+import com.squareup.picasso.result.Failure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricGradleTestRunner;
@@ -69,11 +70,12 @@ public class ImageViewActionTest {
     Picasso picasso = mock(Picasso.class);
     ImageView target = mockImageViewTarget();
     Callback callback = mockCallback();
+    Failure failure = mock(Failure.class);
     ImageViewAction request =
         new ImageViewAction(picasso, target, null, 0, 0, 0, null, URI_KEY_1, null,
             callback, false);
     request.target.clear();
-    request.error();
+    request.error(failure);
     verifyZeroInteractions(target);
     verifyZeroInteractions(callback);
   }
@@ -99,12 +101,13 @@ public class ImageViewActionTest {
     ImageView target = mockImageViewTarget();
     Callback callback = mockCallback();
     Picasso mock = mock(Picasso.class);
+    Failure failure = mock(Failure.class);
     ImageViewAction request =
         new ImageViewAction(mock, target, null, 0, 0, RESOURCE_ID_1, null, null, null,
             callback, false);
-    request.error();
+    request.error(failure);
     verify(target).setImageResource(RESOURCE_ID_1);
-    verify(callback).onError();
+    verify(callback).onError(failure);
   }
 
   @Test
@@ -112,12 +115,13 @@ public class ImageViewActionTest {
     ImageView target = mockImageViewTarget();
     Callback callback = mockCallback();
     Picasso mock = mock(Picasso.class);
+    Failure failure = mock(Failure.class);
     ImageViewAction request =
         new ImageViewAction(mock, target, null, 0, 0, RESOURCE_ID_1, null, null, null,
             callback, false);
-    request.error();
+    request.error(failure);
     verify(target).setImageResource(RESOURCE_ID_1);
-    verify(callback).onError();
+    verify(callback).onError(failure);
   }
 
   @Test
@@ -126,12 +130,13 @@ public class ImageViewActionTest {
     ImageView target = mockImageViewTarget();
     Callback callback = mockCallback();
     Picasso mock = mock(Picasso.class);
+    Failure failure = mock(Failure.class);
     ImageViewAction request =
         new ImageViewAction(mock, target, null, 0, 0, 0, errorDrawable, URI_KEY_1, null,
             callback, false);
-    request.error();
+    request.error(failure);
     verify(target).setImageDrawable(errorDrawable);
-    verify(callback).onError();
+    verify(callback).onError(failure);
   }
 
   @Test
@@ -151,11 +156,12 @@ public class ImageViewActionTest {
     Picasso picasso = mock(Picasso.class);
     AnimationDrawable placeholder = mock(AnimationDrawable.class);
     ImageView target = mockImageViewTarget();
+    Failure failure = mock(Failure.class);
     when(target.getDrawable()).thenReturn(placeholder);
     ImageViewAction request =
         new ImageViewAction(picasso, target, null, 0, 0, 0, null, URI_KEY_1, null,
             null, false);
-    request.error();
+    request.error(failure);
     verify(placeholder).stop();
   }
 }
