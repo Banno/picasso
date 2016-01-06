@@ -355,21 +355,9 @@ class Dispatcher {
         log(OWNER_DISPATCHER, VERB_RETRYING, getLogIdsForHunter(hunter));
       }
       //noinspection ThrowableResultOfMethodCallIgnored
-      hunter.getFailure().accept(new Failure.Visitor<Void>() {
-        @Override
-        public Void visit(HttpFailure httpFailure) {
-          return null;
-        }
-
-        @Override
-        public Void visit(GenericFailure genericFailure) {
-          if (genericFailure.getCause() instanceof NetworkRequestHandler.ContentLengthException) {
-            hunter.networkPolicy |= NetworkPolicy.NO_CACHE.index;
-          }
-
-          return null;
-        }
-      });
+      if (hunter.getFailure().getCause() instanceof NetworkRequestHandler.ContentLengthException) {
+        hunter.networkPolicy |= NetworkPolicy.NO_CACHE.index;
+      }
 
       hunter.future = service.submit(hunter);
       return;
