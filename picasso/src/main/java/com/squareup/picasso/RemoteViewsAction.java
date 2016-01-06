@@ -20,6 +20,7 @@ import android.app.NotificationManager;
 import android.appwidget.AppWidgetManager;
 import android.graphics.Bitmap;
 import android.widget.RemoteViews;
+import com.squareup.picasso.result.Failure;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 import static com.squareup.picasso.Utils.getService;
@@ -42,7 +43,7 @@ abstract class RemoteViewsAction extends Action<RemoteViewsAction.RemoteViewsTar
     update();
   }
 
-  @Override public void error() {
+  @Override public void error(Failure failure) {
     if (errorResId != 0) {
       setImageResource(errorResId);
     }
