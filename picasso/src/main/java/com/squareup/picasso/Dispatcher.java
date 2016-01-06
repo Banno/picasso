@@ -321,7 +321,7 @@ class Dispatcher {
     }
   }
 
-  void performRetry(final BitmapHunter hunter) {
+  void performRetry(BitmapHunter hunter) {
     if (hunter.isCancelled()) return;
 
     if (service.isShutdown()) {
