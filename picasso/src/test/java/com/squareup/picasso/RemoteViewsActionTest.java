@@ -56,13 +56,13 @@ public class RemoteViewsActionTest {
 
   @Test public void errorWithNoResourceIsNoop() throws Exception {
     RemoteViewsAction action = createAction();
-    action.error();
+    action.error(null);
     verifyZeroInteractions(remoteViews);
   }
 
   @Test public void errorWithResourceSetsResource() throws Exception {
     RemoteViewsAction action = createAction(1);
-    action.error();
+    action.error(null);
     verify(remoteViews).setImageViewResource(1, 1);
   }
 

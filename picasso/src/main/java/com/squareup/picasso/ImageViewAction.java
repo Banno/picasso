@@ -20,6 +20,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
+import com.squareup.picasso.result.Failure;
 
 class ImageViewAction extends Action<ImageView> {
 
@@ -53,7 +54,7 @@ class ImageViewAction extends Action<ImageView> {
     }
   }
 
-  @Override public void error() {
+  @Override public void error(Failure failure) {
     ImageView target = this.target.get();
     if (target == null) {
       return;
@@ -69,7 +70,7 @@ class ImageViewAction extends Action<ImageView> {
     }
 
     if (callback != null) {
-      callback.onError();
+      callback.onError(failure);
     }
   }
 
