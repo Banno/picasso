@@ -23,9 +23,14 @@ subprojects {
   group = GROUP
   version = VERSION_NAME
 
+  ext {
+    SNAPSHOT_REPOSITORY_URL = String.format("file:%s/.m2/repository", System.getProperty("user.home"))
+  }
+
   afterEvaluate {
     tasks.findByName('check').dependsOn('checkstyle')
   }
+
 }
 
 apply from: rootProject.file('dependencies.gradle')
