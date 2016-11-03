@@ -20,6 +20,7 @@ import android.app.NotificationManager;
 import android.appwidget.AppWidgetManager;
 import android.graphics.Bitmap;
 import android.widget.RemoteViews;
+
 import com.squareup.picasso.result.Failure;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
