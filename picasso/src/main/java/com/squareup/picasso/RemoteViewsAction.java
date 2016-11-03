@@ -61,7 +61,7 @@ abstract class RemoteViewsAction extends Action<RemoteViewsAction.RemoteViewsTar
       setImageResource(errorResId);
     }
     if (callback != null) {
-      callback.onError();
+      callback.onError(failure);
     }
   }
 
