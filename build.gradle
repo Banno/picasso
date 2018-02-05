@@ -1,12 +1,12 @@
 subprojects {
   buildscript {
     repositories {
-      mavenCentral()
+      google()
       jcenter()
     }
   }
   repositories {
-    mavenCentral()
+    google()
     jcenter()
   }
 
@@ -26,13 +26,14 @@ subprojects {
   version = VERSION_NAME
 
   ext {
-    SNAPSHOT_REPOSITORY_URL = String.format("file:%s/.m2/repository", System.getProperty("user.home"))
+    SNAPSHOT_REPOSITORY_URL = System.env.NEXUS_REPOSITORY
+    SONATYPE_NEXUS_USERNAME = System.env.NEXUS_USER
+    SONATYPE_NEXUS_PASSWORD = System.env.NEXUS_PASSWORD
   }
 
   afterEvaluate {
     tasks.findByName('check').dependsOn('checkstyle')
   }
-
 }
 
 apply from: rootProject.file('dependencies.gradle')
