@@ -1,13 +1,11 @@
 subprojects {
   buildscript {
     repositories {
-      google()
-      jcenter()
+      mavenCentral()
     }
   }
   repositories {
-    google()
-    jcenter()
+    mavenCentral()
   }
 
   plugins.apply('checkstyle')
@@ -24,12 +22,6 @@ subprojects {
 
   group = GROUP
   version = VERSION_NAME
-
-  ext {
-    SNAPSHOT_REPOSITORY_URL = System.env.NEXUS_REPOSITORY
-    SONATYPE_NEXUS_USERNAME = System.env.NEXUS_USER
-    SONATYPE_NEXUS_PASSWORD = System.env.NEXUS_PASSWORD
-  }
 
   afterEvaluate {
     tasks.findByName('check').dependsOn('checkstyle')

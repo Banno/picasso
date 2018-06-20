@@ -17,8 +17,6 @@ package com.squareup.picasso;
 
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import com.squareup.picasso.result.Failure;
-
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
@@ -65,7 +63,7 @@ abstract class Action<T> {
 
   abstract void complete(Bitmap result, Picasso.LoadedFrom from);
 
-  abstract void error(Failure failure);
+  abstract void error();
 
   void cancel() {
     cancelled = true;

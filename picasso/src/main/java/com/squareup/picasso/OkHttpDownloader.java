@@ -120,9 +120,8 @@ public class OkHttpDownloader implements Downloader {
     int responseCode = response.code();
     if (responseCode >= 300) {
       response.body().close();
-      throw new ResponseException(responseCode + " " + response.message(),
-              networkPolicy,
-              responseCode);
+      throw new ResponseException(responseCode + " " + response.message(), networkPolicy,
+          responseCode);
     }
 
     boolean fromCache = response.cacheResponse() != null;

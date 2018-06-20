@@ -24,8 +24,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
-
-import com.squareup.picasso.result.Failure;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +46,6 @@ import static com.squareup.picasso.TestUtils.mockImageViewTarget;
 import static com.squareup.picasso.TestUtils.mockTarget;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Assertions.fail;
-import static org.fest.assertions.api.Assertions.filter;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -132,16 +129,14 @@ public class PicassoTest {
   @Test public void completeInvokesErrorOnAllFailedRequests() {
     Action action1 = mockAction(URI_KEY_1, URI_1, mockImageViewTarget());
     Action action2 = mockCanceledAction();
-    Failure failure = mock(Failure.class);
     Exception exception = mock(Exception.class);
-    when(failure.getCause()).thenReturn(exception);
     BitmapHunter hunter = mockHunter(URI_KEY_1, null, false);
-    when(hunter.getFailure()).thenReturn(failure);
+    when(hunter.getException()).thenReturn(exception);
     when(hunter.getActions()).thenReturn(Arrays.asList(action1, action2));
     picasso.complete(hunter);
-    verify(action1).error(failure);
-    verify(action2, never()).error(failure);
-    verify(listener).onImageLoadFailed(picasso, URI_1, failure);
+    verify(action1).error();
+    verify(action2, never()).error();
+    verify(listener).onImageLoadFailed(picasso, URI_1, exception);
   }
 
   @Test public void completeDeliversToSingle() {

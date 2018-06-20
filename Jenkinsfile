@@ -1,2 +1,0 @@
-library('android-shared')
-publishForkedProject()

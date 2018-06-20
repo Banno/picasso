@@ -26,7 +26,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -352,10 +351,9 @@ class Dispatcher {
         log(OWNER_DISPATCHER, VERB_RETRYING, getLogIdsForHunter(hunter));
       }
       //noinspection ThrowableResultOfMethodCallIgnored
-      if (hunter.getFailure().getCause() instanceof NetworkRequestHandler.ContentLengthException) {
+      if (hunter.getException() instanceof NetworkRequestHandler.ContentLengthException) {
         hunter.networkPolicy |= NetworkPolicy.NO_CACHE.index;
       }
-
       hunter.future = service.submit(hunter);
       return;
     }
