@@ -24,7 +24,7 @@ import okhttp3.ResponseBody;
 import static com.squareup.picasso.Picasso.LoadedFrom.DISK;
 import static com.squareup.picasso.Picasso.LoadedFrom.NETWORK;
 
-class NetworkRequestHandler extends RequestHandler {
+public class NetworkRequestHandler extends RequestHandler {
   private static final String SCHEME_HTTP = "http";
   private static final String SCHEME_HTTPS = "https";
 
@@ -103,17 +103,17 @@ class NetworkRequestHandler extends RequestHandler {
     return builder.build();
   }
 
-  static class ContentLengthException extends IOException {
+  public static class ContentLengthException extends IOException {
     ContentLengthException(String message) {
       super(message);
     }
   }
 
-  static final class ResponseException extends IOException {
-    final int code;
-    final int networkPolicy;
+  public static final class ResponseException extends IOException {
+    public final int code;
+    public final int networkPolicy;
 
-    ResponseException(int code, int networkPolicy) {
+    public ResponseException(int code, int networkPolicy) {
       super("HTTP " + code);
       this.code = code;
       this.networkPolicy = networkPolicy;
