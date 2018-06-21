@@ -16,6 +16,7 @@
 package com.squareup.picasso;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,9 +28,9 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,16 +104,16 @@ class Dispatcher {
     Utils.flushStackLocalLeaks(dispatcherThread.getLooper());
     this.context = context;
     this.service = service;
-    this.hunterMap = new LinkedHashMap<String, BitmapHunter>();
-    this.failedActions = new WeakHashMap<Object, Action>();
-    this.pausedActions = new WeakHashMap<Object, Action>();
-    this.pausedTags = new HashSet<Object>();
+    this.hunterMap = new LinkedHashMap<>();
+    this.failedActions = new WeakHashMap<>();
+    this.pausedActions = new WeakHashMap<>();
+    this.pausedTags = new LinkedHashSet<>();
     this.handler = new DispatcherHandler(dispatcherThread.getLooper(), this);
     this.downloader = downloader;
     this.mainThreadHandler = mainThreadHandler;
     this.cache = cache;
     this.stats = stats;
-    this.batch = new ArrayList<BitmapHunter>(4);
+    this.batch = new ArrayList<>(4);
     this.airplaneMode = Utils.isAirplaneModeOn(this.context);
     this.scansNetworkChanges = hasPermission(context, Manifest.permission.ACCESS_NETWORK_STATE);
     this.receiver = new NetworkBroadcastReceiver(this);
@@ -305,7 +306,7 @@ class Dispatcher {
       Action action = i.next();
       if (action.getTag().equals(tag)) {
         if (batch == null) {
-          batch = new ArrayList<Action>();
+          batch = new ArrayList<>();
         }
         batch.add(action);
         i.remove();
@@ -317,6 +318,7 @@ class Dispatcher {
     }
   }
 
+  @SuppressLint("MissingPermission")
   void performRetry(BitmapHunter hunter) {
     if (hunter.isCancelled()) return;
 
@@ -331,37 +333,21 @@ class Dispatcher {
       networkInfo = connectivityManager.getActiveNetworkInfo();
     }
 
-    boolean hasConnectivity = networkInfo != null && networkInfo.isConnected();
-    boolean shouldRetryHunter = hunter.shouldRetry(airplaneMode, networkInfo);
-    boolean supportsReplay = hunter.supportsReplay();
-
-    if (!shouldRetryHunter) {
-      // Mark for replay only if we observe network info changes and support replay.
-      boolean willReplay = scansNetworkChanges && supportsReplay;
-      performError(hunter, willReplay);
-      if (willReplay) {
-        markForReplay(hunter);
-      }
-      return;
-    }
-
-    // If we don't scan for network changes (missing permission) or if we have connectivity, retry.
-    if (!scansNetworkChanges || hasConnectivity) {
+    if (hunter.shouldRetry(airplaneMode, networkInfo)) {
       if (hunter.getPicasso().loggingEnabled) {
         log(OWNER_DISPATCHER, VERB_RETRYING, getLogIdsForHunter(hunter));
       }
-      //noinspection ThrowableResultOfMethodCallIgnored
       if (hunter.getException() instanceof NetworkRequestHandler.ContentLengthException) {
         hunter.networkPolicy |= NetworkPolicy.NO_CACHE.index;
       }
       hunter.future = service.submit(hunter);
-      return;
-    }
-
-    performError(hunter, supportsReplay);
-
-    if (supportsReplay) {
-      markForReplay(hunter);
+    } else {
+      // Mark for replay only if we observe network info changes and support replay.
+      boolean willReplay = scansNetworkChanges && hunter.supportsReplay();
+      performError(hunter, willReplay);
+      if (willReplay) {
+        markForReplay(hunter);
+      }
     }
   }
 
@@ -377,7 +363,7 @@ class Dispatcher {
   }
 
   void performBatchComplete() {
-    List<BitmapHunter> copy = new ArrayList<BitmapHunter>(batch);
+    List<BitmapHunter> copy = new ArrayList<>(batch);
     batch.clear();
     mainThreadHandler.sendMessage(mainThreadHandler.obtainMessage(HUNTER_BATCH_COMPLETE, copy));
     logBatch(copy);
@@ -447,6 +433,9 @@ class Dispatcher {
     if (hunter.isCancelled()) {
       return;
     }
+    if (hunter.result != null) {
+      hunter.result.prepareToDraw();
+    }
     batch.add(hunter);
     if (!handler.hasMessages(HUNTER_DELAY_NEXT_BATCH)) {
       handler.sendEmptyMessageDelayed(HUNTER_DELAY_NEXT_BATCH, BATCH_DELAY);
@@ -470,7 +459,7 @@ class Dispatcher {
   private static class DispatcherHandler extends Handler {
     private final Dispatcher dispatcher;
 
-    public DispatcherHandler(Looper looper, Dispatcher dispatcher) {
+    DispatcherHandler(Looper looper, Dispatcher dispatcher) {
       super(looper);
       this.dispatcher = dispatcher;
     }
@@ -563,6 +552,7 @@ class Dispatcher {
       dispatcher.context.unregisterReceiver(this);
     }
 
+    @SuppressLint("MissingPermission")
     @Override public void onReceive(Context context, Intent intent) {
       // On some versions of Android this may be called with a null Intent,
       // also without extras (getExtras() == null), in such case we use defaults.

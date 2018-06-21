@@ -34,6 +34,7 @@ import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
+import static com.google.common.truth.Truth.assertThat;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
 import static com.squareup.picasso.Picasso.Priority.HIGH;
 import static com.squareup.picasso.Picasso.Priority.LOW;
@@ -53,7 +54,6 @@ import static com.squareup.picasso.TestUtils.mockImageViewTarget;
 import static com.squareup.picasso.TestUtils.mockNotification;
 import static com.squareup.picasso.TestUtils.mockRemoteViews;
 import static com.squareup.picasso.TestUtils.mockTarget;
-import static org.fest.assertions.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -203,13 +203,6 @@ public class RequestCreatorTest {
     verify(target).onBitmapLoaded(bitmap, MEMORY);
     verify(picasso).cancelRequest(target);
     verify(picasso, never()).enqueueAndSubmit(any(Action.class));
-  }
-
-  @Test
-  public void intoTargetAndSkipMemoryCacheDoesNotCheckMemoryCache() {
-    Target target = mockTarget();
-    new RequestCreator(picasso, URI_1, 0).skipMemoryCache().into(target);
-    verify(picasso, never()).quickMemoryCacheCheck(URI_KEY_1);
   }
 
   @Test
@@ -381,17 +374,6 @@ public class RequestCreatorTest {
   }
 
   @Test
-  public void intoImageViewWithFitAndRequestedLayoutQueuesDeferredImageViewRequest() {
-    ImageView target = mockFitImageViewTarget(true);
-    when(target.getWidth()).thenReturn(100);
-    when(target.getHeight()).thenReturn(100);
-    when(target.isLayoutRequested()).thenReturn(true);
-    new RequestCreator(picasso, URI_1, 0).fit().into(target);
-    verify(picasso, never()).enqueueAndSubmit(any(Action.class));
-    verify(picasso).defer(eq(target), any(DeferredRequestCreator.class));
-  }
-
-  @Test
   public void intoImageViewWithFitAndDimensionsQueuesImageViewRequest() {
     ImageView target = mockFitImageViewTarget(true);
     when(target.getWidth()).thenReturn(100);
@@ -399,13 +381,6 @@ public class RequestCreatorTest {
     new RequestCreator(picasso, URI_1, 0).fit().into(target);
     verify(picasso).enqueueAndSubmit(actionCaptor.capture());
     assertThat(actionCaptor.getValue()).isInstanceOf(ImageViewAction.class);
-  }
-
-  @Test
-  public void intoImageViewAndSkipMemoryCacheDoesNotCheckMemoryCache() {
-    ImageView target = mockImageViewTarget();
-    new RequestCreator(picasso, URI_1, 0).skipMemoryCache().into(target);
-    verify(picasso, never()).quickMemoryCacheCheck(URI_KEY_1);
   }
 
   @Test

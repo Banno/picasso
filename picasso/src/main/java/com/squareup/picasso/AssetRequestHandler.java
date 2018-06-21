@@ -19,7 +19,8 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import java.io.IOException;
-import java.io.InputStream;
+import okio.Okio;
+import okio.Source;
 
 import static android.content.ContentResolver.SCHEME_FILE;
 import static com.squareup.picasso.Picasso.LoadedFrom.DISK;
@@ -33,7 +34,7 @@ class AssetRequestHandler extends RequestHandler {
   private final Object lock = new Object();
   private AssetManager assetManager;
 
-  public AssetRequestHandler(Context context) {
+  AssetRequestHandler(Context context) {
     this.context = context;
   }
 
@@ -51,8 +52,8 @@ class AssetRequestHandler extends RequestHandler {
         }
       }
     }
-    InputStream is = assetManager.open(getFilePath(request));
-    return new Result(is, DISK);
+    Source source = Okio.source(assetManager.open(getFilePath(request)));
+    return new Result(source, DISK);
   }
 
   static String getFilePath(Request request) {
