@@ -15,6 +15,7 @@
  */
 package com.squareup.picasso;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -29,8 +30,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
-import com.squareup.picasso.result.Failure;
-
 import java.io.File;
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
@@ -60,8 +59,8 @@ import static com.squareup.picasso.Utils.log;
 /**
  * Image downloading, transformation, and caching manager.
  * <p>
- * Use {@link #with(android.content.Context)} for the global singleton instance or construct your
- * own instance with {@link Builder}.
+ * Use {@link #get()} for the global singleton instance
+ * or construct your own instance with {@link Builder}.
  */
 public class Picasso {
 
@@ -71,7 +70,7 @@ public class Picasso {
      * Invoked when an image has failed to load. This is useful for reporting image failures to a
      * remote analytics service, for example.
      */
-    void onImageLoadFailed(Picasso picasso, Uri uri, Failure failure);
+    void onImageLoadFailed(Picasso picasso, Uri uri, Exception exception);
   }
 
   /**
@@ -146,7 +145,7 @@ public class Picasso {
     }
   };
 
-  static volatile Picasso singleton = null;
+  @SuppressLint("StaticFieldLeak") static volatile Picasso singleton = null;
 
   private final Listener listener;
   private final RequestTransformer requestTransformer;
@@ -179,8 +178,7 @@ public class Picasso {
 
     int builtInHandlers = 7; // Adjust this as internal handlers are added or removed.
     int extraCount = (extraRequestHandlers != null ? extraRequestHandlers.size() : 0);
-    List<RequestHandler> allRequestHandlers =
-        new ArrayList<RequestHandler>(builtInHandlers + extraCount);
+    List<RequestHandler> allRequestHandlers = new ArrayList<>(builtInHandlers + extraCount);
 
     // ResourceRequestHandler needs to be the first in the list to avoid
     // forcing other RequestHandlers to perform null checks on request.uri
@@ -198,11 +196,11 @@ public class Picasso {
     requestHandlers = Collections.unmodifiableList(allRequestHandlers);
 
     this.stats = stats;
-    this.targetToAction = new WeakHashMap<Object, Action>();
-    this.targetToDeferredRequestCreator = new WeakHashMap<ImageView, DeferredRequestCreator>();
+    this.targetToAction = new WeakHashMap<>();
+    this.targetToDeferredRequestCreator = new WeakHashMap<>();
     this.indicatorsEnabled = indicatorsEnabled;
     this.loggingEnabled = loggingEnabled;
-    this.referenceQueue = new ReferenceQueue<Object>();
+    this.referenceQueue = new ReferenceQueue<>();
     this.cleanupThread = new CleanupThread(referenceQueue, HANDLER);
     this.cleanupThread.start();
   }
@@ -249,7 +247,7 @@ public class Picasso {
       throw new IllegalArgumentException("Cannot cancel requests with null tag.");
     }
 
-    List<Action> actions = new ArrayList<Action>(targetToAction.values());
+    List<Action> actions = new ArrayList<>(targetToAction.values());
     //noinspection ForLoopReplaceableByForEach
     for (int i = 0, n = actions.size(); i < n; i++) {
       Action action = actions.get(i);
@@ -259,7 +257,7 @@ public class Picasso {
     }
 
     List<DeferredRequestCreator> deferredRequestCreators =
-        new ArrayList<DeferredRequestCreator>(targetToDeferredRequestCreator.values());
+        new ArrayList<>(targetToDeferredRequestCreator.values());
     //noinspection ForLoopReplaceableByForEach
     for (int i = 0, n = deferredRequestCreators.size(); i < n; i++) {
       DeferredRequestCreator deferredRequestCreator = deferredRequestCreators.get(i);
@@ -316,8 +314,7 @@ public class Picasso {
    * {@link #load(Uri)}.
    * <p>
    * This path may be a remote URL, file resource (prefixed with {@code file:}), content resource
-   * (prefixed with {@code content:}), or android resource (prefixed with {@code
-   * android.resource:}.
+   * (prefixed with {@code content:}), or android resource (prefixed with {@code android.resource:}.
    * <p>
    * Passing {@code null} as a {@code path} will not trigger any request but will set a
    * placeholder, if one is specified.
@@ -407,25 +404,6 @@ public class Picasso {
       throw new IllegalArgumentException("file == null");
     }
     invalidate(Uri.fromFile(file));
-  }
-
-  /**
-   * {@code true} if debug display, logging, and statistics are enabled.
-   * <p>
-   * @deprecated Use {@link #areIndicatorsEnabled()} and {@link #isLoggingEnabled()} instead.
-   */
-  @SuppressWarnings("UnusedDeclaration") @Deprecated public boolean isDebugging() {
-    return areIndicatorsEnabled() && isLoggingEnabled();
-  }
-
-  /**
-   * Toggle whether debug display, logging, and statistics are enabled.
-   * <p>
-   * @deprecated Use {@link #setIndicatorsEnabled(boolean)} and {@link #setLoggingEnabled(boolean)}
-   * instead.
-   */
-  @SuppressWarnings("UnusedDeclaration") @Deprecated public void setDebugging(boolean debugging) {
-    setIndicatorsEnabled(debugging);
   }
 
   /** Toggle whether to display debug indicators on images. */
@@ -542,24 +520,24 @@ public class Picasso {
     }
 
     Uri uri = hunter.getData().uri;
-    Failure failure = hunter.getFailure();
+    Exception exception = hunter.getException();
     Bitmap result = hunter.getResult();
     LoadedFrom from = hunter.getLoadedFrom();
 
     if (single != null) {
-      deliverAction(result, from, single, failure);
+      deliverAction(result, from, single, exception);
     }
 
     if (hasMultiple) {
       //noinspection ForLoopReplaceableByForEach
       for (int i = 0, n = joined.size(); i < n; i++) {
         Action join = joined.get(i);
-        deliverAction(result, from, join, failure);
+        deliverAction(result, from, join, exception);
       }
     }
 
-    if (listener != null && failure != null) {
-      listener.onImageLoadFailed(this, uri, failure);
+    if (listener != null && exception != null) {
+      listener.onImageLoadFailed(this, uri, exception);
     }
   }
 
@@ -584,7 +562,7 @@ public class Picasso {
     }
   }
 
-  private void deliverAction(Bitmap result, LoadedFrom from, Action action, Failure failure) {
+  private void deliverAction(Bitmap result, LoadedFrom from, Action action, Exception e) {
     if (action.isCancelled()) {
       return;
     }
@@ -600,16 +578,14 @@ public class Picasso {
         log(OWNER_MAIN, VERB_COMPLETED, action.request.logId(), "from " + from);
       }
     } else {
-      if (failure != null) {
-        action.error(failure);
-      }
+      action.error(e);
       if (loggingEnabled) {
-        log(OWNER_MAIN, VERB_ERRORED, action.request.logId());
+        log(OWNER_MAIN, VERB_ERRORED, action.request.logId(), e.getMessage());
       }
     }
   }
 
-  private void cancelExistingRequest(Object target) {
+  void cancelExistingRequest(Object target) {
     checkMain();
     Action action = targetToAction.remove(target);
     if (action != null) {
@@ -680,7 +656,7 @@ public class Picasso {
   }
 
   /**
-   * The global default {@link Picasso} instance.
+   * The global {@link Picasso} instance.
    * <p>
    * This instance is automatically initialized with defaults that are suitable to most
    * implementations.
@@ -697,14 +673,14 @@ public class Picasso {
    * {@link Picasso} instance. You can either use this directly or by setting it as the global
    * instance with {@link #setSingletonInstance}.
    */
-  public static Picasso with(@NonNull Context context) {
-    if (context == null) {
-      throw new IllegalArgumentException("context == null");
-    }
+  public static Picasso get() {
     if (singleton == null) {
       synchronized (Picasso.class) {
         if (singleton == null) {
-          singleton = new Builder(context).build();
+          if (PicassoProvider.context == null) {
+            throw new IllegalStateException("context == null");
+          }
+          singleton = new Builder(PicassoProvider.context).build();
         }
       }
     }
@@ -712,9 +688,9 @@ public class Picasso {
   }
 
   /**
-   * Set the global instance returned from {@link #with}.
+   * Set the global instance returned from {@link #get}.
    * <p>
-   * This method must be called before any calls to {@link #with} and may only be called once.
+   * This method must be called before any calls to {@link #get} and may only be called once.
    */
   public static void setSingletonInstance(@NonNull Picasso picasso) {
     if (picasso == null) {
@@ -838,21 +814,13 @@ public class Picasso {
         throw new IllegalArgumentException("RequestHandler must not be null.");
       }
       if (requestHandlers == null) {
-        requestHandlers = new ArrayList<RequestHandler>();
+        requestHandlers = new ArrayList<>();
       }
       if (requestHandlers.contains(requestHandler)) {
         throw new IllegalStateException("RequestHandler already registered.");
       }
       requestHandlers.add(requestHandler);
       return this;
-    }
-
-    /**
-     * @deprecated Use {@link #indicatorsEnabled(boolean)} instead.
-     * Whether debugging is enabled or not.
-     */
-    @Deprecated public Builder debugging(boolean debugging) {
-      return indicatorsEnabled(debugging);
     }
 
     /** Toggle whether to display debug indicators on images. */
@@ -877,7 +845,7 @@ public class Picasso {
       Context context = this.context;
 
       if (downloader == null) {
-        downloader = Utils.createDefaultDownloader(context);
+        downloader = new OkHttp3Downloader(context);
       }
       if (cache == null) {
         cache = new LruCache(context);
@@ -906,7 +874,7 @@ public class Picasso {
 
     final int debugColor;
 
-    private LoadedFrom(int debugColor) {
+    LoadedFrom(int debugColor) {
       this.debugColor = debugColor;
     }
   }

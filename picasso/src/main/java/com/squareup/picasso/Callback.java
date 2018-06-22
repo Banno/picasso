@@ -15,19 +15,17 @@
  */
 package com.squareup.picasso;
 
-import com.squareup.picasso.result.Failure;
-
 public interface Callback {
   void onSuccess();
 
-  void onError(Failure failure);
+  void onError(Exception e);
 
-  public static class EmptyCallback implements Callback {
+  class EmptyCallback implements Callback {
 
     @Override public void onSuccess() {
     }
 
-    @Override public void onError(Failure failure) {
+    @Override public void onError(Exception e) {
     }
   }
 }

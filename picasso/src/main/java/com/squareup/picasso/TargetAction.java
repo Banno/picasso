@@ -17,7 +17,6 @@ package com.squareup.picasso;
 
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import com.squareup.picasso.result.Failure;
 
 final class TargetAction extends Action<Target> {
 
@@ -41,13 +40,13 @@ final class TargetAction extends Action<Target> {
     }
   }
 
-  @Override void error(Failure failure) {
+  @Override void error(Exception e) {
     Target target = getTarget();
     if (target != null) {
       if (errorResId != 0) {
-        target.onBitmapFailed(picasso.context.getResources().getDrawable(errorResId));
+        target.onBitmapFailed(e, picasso.context.getResources().getDrawable(errorResId));
       } else {
-        target.onBitmapFailed(errorDrawable);
+        target.onBitmapFailed(e, errorDrawable);
       }
     }
   }

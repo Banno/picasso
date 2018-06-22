@@ -24,16 +24,16 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
-
-import com.squareup.picasso.result.Failure;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
+import static com.google.common.truth.Truth.assertThat;
 import static com.squareup.picasso.Picasso.Listener;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
 import static com.squareup.picasso.RemoteViewsAction.RemoteViewsTarget;
@@ -46,9 +46,7 @@ import static com.squareup.picasso.TestUtils.mockDeferredRequestCreator;
 import static com.squareup.picasso.TestUtils.mockHunter;
 import static com.squareup.picasso.TestUtils.mockImageViewTarget;
 import static com.squareup.picasso.TestUtils.mockTarget;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.fest.assertions.api.Assertions.fail;
-import static org.fest.assertions.api.Assertions.filter;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -60,6 +58,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(RobolectricGradleTestRunner.class)
+@Config(sdk = 23) // Works around https://github.com/robolectric/robolectric/issues/2566.
 public class PicassoTest {
 
   @Mock Context context;
@@ -99,7 +98,8 @@ public class PicassoTest {
     Action action = mockAction(URI_KEY_1, URI_1, mockImageViewTarget());
     picasso.enqueueAndSubmit(action);
     verify(dispatcher).dispatchSubmit(action);
-    assertThat(picasso.targetToAction).hasSize(1).containsValue(action);
+    assertThat(picasso.targetToAction).hasSize(1);
+    assertThat(picasso.targetToAction.containsValue(action)).isTrue();
     picasso.enqueueAndSubmit(action);
     verify(action, never()).cancel();
     verify(dispatcher, never()).dispatchCancel(action);
@@ -132,16 +132,14 @@ public class PicassoTest {
   @Test public void completeInvokesErrorOnAllFailedRequests() {
     Action action1 = mockAction(URI_KEY_1, URI_1, mockImageViewTarget());
     Action action2 = mockCanceledAction();
-    Failure failure = mock(Failure.class);
     Exception exception = mock(Exception.class);
-    when(failure.getCause()).thenReturn(exception);
     BitmapHunter hunter = mockHunter(URI_KEY_1, null, false);
-    when(hunter.getFailure()).thenReturn(failure);
+    when(hunter.getException()).thenReturn(exception);
     when(hunter.getActions()).thenReturn(Arrays.asList(action1, action2));
     picasso.complete(hunter);
-    verify(action1).error(failure);
-    verify(action2, never()).error(failure);
-    verify(listener).onImageLoadFailed(picasso, URI_1, failure);
+    verify(action1).error(exception);
+    verify(action2, never()).error(exception);
+    verify(listener).onImageLoadFailed(picasso, URI_1, exception);
   }
 
   @Test public void completeDeliversToSingle() {
@@ -285,6 +283,7 @@ public class PicassoTest {
     }
   }
 
+  @Config(sdk = 16) // This test fails on 23 so restore the default level.
   @Test public void cancelExistingRequestWithRemoteViewTarget() {
     int layoutId = 0;
     int viewId = 1;
@@ -353,9 +352,9 @@ public class PicassoTest {
 
   @Test public void shutdownDisallowedOnSingletonInstance() {
     Picasso.singleton = null;
+    PicassoProvider.context = RuntimeEnvironment.application;
     try {
-      Picasso picasso = Picasso.with(RuntimeEnvironment.application);
-      picasso.shutdown();
+      Picasso.get().shutdown();
       fail("Calling shutdown() on static singleton instance should throw");
     } catch (UnsupportedOperationException expected) {
     }
@@ -399,9 +398,10 @@ public class PicassoTest {
 
   @Test public void setSingletonInstanceAfterWithFails() {
     Picasso.singleton = null;
+    PicassoProvider.context = RuntimeEnvironment.application;
 
     // Implicitly create the default singleton instance.
-    Picasso.with(RuntimeEnvironment.application);
+    Picasso.get();
 
     Picasso picasso = new Picasso.Builder(RuntimeEnvironment.application).build();
     try {
@@ -416,7 +416,7 @@ public class PicassoTest {
     Picasso.singleton = null;
     Picasso picasso = new Picasso.Builder(RuntimeEnvironment.application).build();
     Picasso.setSingletonInstance(picasso);
-    assertThat(Picasso.with(RuntimeEnvironment.application)).isSameAs(picasso);
+    assertThat(Picasso.get()).isSameAs(picasso);
   }
 
   @Test public void shutdownClearsDeferredRequests() {
@@ -548,13 +548,16 @@ public class PicassoTest {
 
   @Test public void builderWithoutRequestHandler() {
     Picasso picasso = new Picasso.Builder(RuntimeEnvironment.application).build();
-    assertThat(picasso.getRequestHandlers()).isNotEmpty().doesNotContain(requestHandler);
+    assertThat(picasso.getRequestHandlers()).isNotEmpty();
+    assertThat(picasso.getRequestHandlers()).doesNotContain(requestHandler);
   }
 
   @Test public void builderWithRequestHandler() {
     Picasso picasso = new Picasso.Builder(RuntimeEnvironment.application)
         .addRequestHandler(requestHandler).build();
-    assertThat(picasso.getRequestHandlers()).isNotNull().isNotEmpty().contains(requestHandler);
+    assertThat(picasso.getRequestHandlers()).isNotNull();
+    assertThat(picasso.getRequestHandlers()).isNotEmpty();
+    assertThat(picasso.getRequestHandlers()).contains(requestHandler);
   }
 
   @Test public void builderInvalidContext() {

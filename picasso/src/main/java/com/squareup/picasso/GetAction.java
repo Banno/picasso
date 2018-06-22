@@ -16,7 +16,6 @@
 package com.squareup.picasso;
 
 import android.graphics.Bitmap;
-import com.squareup.picasso.result.Failure;
 
 class GetAction extends Action<Void> {
   GetAction(Picasso picasso, Request data, int memoryPolicy, int networkPolicy, Object tag,
@@ -27,6 +26,6 @@ class GetAction extends Action<Void> {
   @Override void complete(Bitmap result, Picasso.LoadedFrom from) {
   }
 
-  @Override public void error(Failure failure) {
+  @Override public void error(Exception e) {
   }
 }

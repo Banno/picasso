@@ -33,7 +33,7 @@ import static com.example.picasso.SampleContactsActivity.ContactsQuery;
 class SampleContactsAdapter extends CursorAdapter {
   private final LayoutInflater inflater;
 
-  public SampleContactsAdapter(Context context) {
+  SampleContactsAdapter(Context context) {
     super(context, null, 0);
     inflater = LayoutInflater.from(context);
   }
@@ -42,8 +42,8 @@ class SampleContactsAdapter extends CursorAdapter {
     View itemLayout = inflater.inflate(R.layout.sample_contacts_activity_item, viewGroup, false);
 
     ViewHolder holder = new ViewHolder();
-    holder.text1 = (TextView) itemLayout.findViewById(android.R.id.text1);
-    holder.icon = (QuickContactBadge) itemLayout.findViewById(android.R.id.icon);
+    holder.text1 = itemLayout.findViewById(android.R.id.text1);
+    holder.icon = itemLayout.findViewById(android.R.id.icon);
 
     itemLayout.setTag(holder);
 
@@ -58,7 +58,7 @@ class SampleContactsAdapter extends CursorAdapter {
     holder.text1.setText(cursor.getString(ContactsQuery.DISPLAY_NAME));
     holder.icon.assignContactUri(contactUri);
 
-    Picasso.with(context)
+    Picasso.get()
         .load(contactUri)
         .placeholder(R.drawable.contact_picture_placeholder)
         .tag(context)

@@ -13,9 +13,9 @@ import static android.widget.ImageView.ScaleType.CENTER_CROP;
 
 final class SampleGridViewAdapter extends BaseAdapter {
   private final Context context;
-  private final List<String> urls = new ArrayList<String>();
+  private final List<String> urls = new ArrayList<>();
 
-  public SampleGridViewAdapter(Context context) {
+  SampleGridViewAdapter(Context context) {
     this.context = context;
 
     // Ensure we get a different ordering of images on each run.
@@ -23,7 +23,7 @@ final class SampleGridViewAdapter extends BaseAdapter {
     Collections.shuffle(urls);
 
     // Triple up the list.
-    ArrayList<String> copy = new ArrayList<String>(urls);
+    ArrayList<String> copy = new ArrayList<>(urls);
     urls.addAll(copy);
     urls.addAll(copy);
   }
@@ -39,7 +39,7 @@ final class SampleGridViewAdapter extends BaseAdapter {
     String url = getItem(position);
 
     // Trigger the download of the URL asynchronously into the image view.
-    Picasso.with(context) //
+    Picasso.get() //
         .load(url) //
         .placeholder(R.drawable.placeholder) //
         .error(R.drawable.error) //

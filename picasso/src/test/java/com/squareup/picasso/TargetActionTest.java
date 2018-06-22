@@ -19,7 +19,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import com.squareup.picasso.result.Failure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricGradleTestRunner;
@@ -60,12 +59,12 @@ public class TargetActionTest {
   public void invokesOnBitmapFailedIfTargetIsNotNullWithErrorDrawable() throws Exception {
     Drawable errorDrawable = mock(Drawable.class);
     Target target = mockTarget();
-    Failure failure = mock(Failure.class);
     TargetAction request =
         new TargetAction(mock(Picasso.class), target, null, 0, 0, errorDrawable, URI_KEY_1, null,
             0);
-    request.error(failure);
-    verify(target).onBitmapFailed(errorDrawable);
+    Exception e = new RuntimeException();
+    request.error(e);
+    verify(target).onBitmapFailed(e, errorDrawable);
   }
 
   @Test
@@ -73,7 +72,6 @@ public class TargetActionTest {
     Drawable errorDrawable = mock(Drawable.class);
     Target target = mockTarget();
     Context context = mock(Context.class);
-    Failure failure = mock(Failure.class);
     Picasso picasso =
         new Picasso(context, mock(Dispatcher.class), Cache.NONE, null, IDENTITY, null,
             mock(Stats.class), ARGB_8888, false, false);
@@ -83,8 +81,9 @@ public class TargetActionTest {
 
     when(context.getResources()).thenReturn(res);
     when(res.getDrawable(RESOURCE_ID_1)).thenReturn(errorDrawable);
-    request.error(failure);
-    verify(target).onBitmapFailed(errorDrawable);
+    Exception e = new RuntimeException();
+    request.error(e);
+    verify(target).onBitmapFailed(e, errorDrawable);
   }
 
   @Test public void recyclingInSuccessThrowsException() {
@@ -93,7 +92,7 @@ public class TargetActionTest {
         bitmap.recycle();
       }
 
-      @Override public void onBitmapFailed(Drawable errorDrawable) {
+      @Override public void onBitmapFailed(Exception e, Drawable errorDrawable) {
         throw new AssertionError();
       }
 

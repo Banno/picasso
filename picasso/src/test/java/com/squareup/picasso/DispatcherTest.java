@@ -25,9 +25,6 @@ import android.os.Message;
 import com.squareup.picasso.NetworkRequestHandler.ContentLengthException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-
-import com.squareup.picasso.result.Failure;
-import com.squareup.picasso.result.GenericFailure;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +36,7 @@ import static android.content.Intent.ACTION_AIRPLANE_MODE_CHANGED;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
+import static com.google.common.truth.Truth.assertThat;
 import static com.squareup.picasso.Dispatcher.NetworkBroadcastReceiver;
 import static com.squareup.picasso.Dispatcher.NetworkBroadcastReceiver.EXTRA_AIRPLANE_STATE;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
@@ -53,7 +51,6 @@ import static com.squareup.picasso.TestUtils.mockHunter;
 import static com.squareup.picasso.TestUtils.mockNetworkInfo;
 import static com.squareup.picasso.TestUtils.mockPicasso;
 import static com.squareup.picasso.TestUtils.mockTarget;
-import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -178,15 +175,15 @@ public class DispatcherTest {
   @Test public void performSubmitWithFetchActionWithErrorCompletionCallback() {
     String pausedTag = "pausedTag";
     Callback callback = mockCallback();
-    Failure failure = mock(Failure.class);
 
     FetchAction fetchAction =
         new FetchAction(mockPicasso(), new Request.Builder(URI_1).build(), 0, 0, pausedTag,
             URI_KEY_1, callback);
     dispatcher.performSubmit(fetchAction, false);
-    fetchAction.error(failure);
+    Exception e = new RuntimeException();
+    fetchAction.error(e);
 
-    verify(callback).onError(failure);
+    verify(callback).onError(e);
   }
 
   @Test public void performCancelWithFetchActionWithCallback() {
@@ -238,7 +235,7 @@ public class DispatcherTest {
     dispatcher.pausedTags.add("tag");
     dispatcher.pausedActions.put(action.getTarget(), action);
     dispatcher.performCancel(action);
-    assertThat(dispatcher.pausedTags).hasSize(1).contains("tag");
+    assertThat(dispatcher.pausedTags).containsExactly("tag");
     assertThat(dispatcher.pausedActions).isEmpty();
     verify(hunter).detach(action);
   }
@@ -312,7 +309,7 @@ public class DispatcherTest {
     NetworkInfo networkInfo = mockNetworkInfo(true);
     BitmapHunter hunter = mockHunter(URI_KEY_2, bitmap1, false);
     when(hunter.shouldRetry(anyBoolean(), any(NetworkInfo.class))).thenReturn(true);
-    when(hunter.getFailure()).thenReturn(new GenericFailure(new ContentLengthException("304 error")));
+    when(hunter.getException()).thenReturn(new ContentLengthException("304 error"));
     when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
     dispatcher.performRetry(hunter);
     assertThat(NetworkPolicy.shouldReadFromDiskCache(hunter.networkPolicy)).isFalse();
@@ -364,25 +361,21 @@ public class DispatcherTest {
     verify(service).submit(hunter);
   }
 
-  @Test public void performRetryMarksForReplayIfSupportsReplayAndNoConnectivity() {
-    NetworkInfo networkInfo = mockNetworkInfo(false);
+  @Test public void performRetryMarksForReplayIfSupportsReplayAndShouldNotRetry() {
     Action action = mockAction(URI_KEY_1, URI_1, mockTarget());
     BitmapHunter hunter = mockHunter(URI_KEY_1, bitmap1, false, action);
-    when(hunter.shouldRetry(anyBoolean(), any(NetworkInfo.class))).thenReturn(true);
+    when(hunter.shouldRetry(anyBoolean(), any(NetworkInfo.class))).thenReturn(false);
     when(hunter.supportsReplay()).thenReturn(true);
-    when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
     dispatcher.performRetry(hunter);
     assertThat(dispatcher.hunterMap).isEmpty();
     assertThat(dispatcher.failedActions).hasSize(1);
     verify(service, never()).submit(hunter);
   }
 
-  @Test public void performRetryRetriesIfHasConnectivity() {
-    NetworkInfo networkInfo = mockNetworkInfo(true);
+  @Test public void performRetryRetriesIfShouldRetry() {
     Action action = mockAction(URI_KEY_1, URI_1, mockTarget());
     BitmapHunter hunter = mockHunter(URI_KEY_1, bitmap1, false, action);
     when(hunter.shouldRetry(anyBoolean(), any(NetworkInfo.class))).thenReturn(true);
-    when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
     dispatcher.performRetry(hunter);
     assertThat(dispatcher.hunterMap).isEmpty();
     assertThat(dispatcher.failedActions).isEmpty();
@@ -447,7 +440,7 @@ public class DispatcherTest {
 
   @Test public void performPauseAndResumeUpdatesListOfPausedTags() {
     dispatcher.performPauseTag("tag");
-    assertThat(dispatcher.pausedTags).hasSize(1).contains("tag");
+    assertThat(dispatcher.pausedTags).containsExactly("tag");
     dispatcher.performResumeTag("tag");
     assertThat(dispatcher.pausedTags).isEmpty();
   }
@@ -466,7 +459,8 @@ public class DispatcherTest {
     Action action = mockAction(URI_KEY_1, URI_1, "tag");
     dispatcher.performSubmit(action);
     assertThat(dispatcher.hunterMap).isEmpty();
-    assertThat(dispatcher.pausedActions).hasSize(1).containsValue(action);
+    assertThat(dispatcher.pausedActions).hasSize(1);
+    assertThat(dispatcher.pausedActions.containsValue(action)).isTrue();
     verify(service, never()).submit(any(BitmapHunter.class));
   }
 
@@ -486,7 +480,8 @@ public class DispatcherTest {
     dispatcher.hunterMap.put(URI_KEY_1, hunter);
     dispatcher.performPauseTag("tag");
     assertThat(dispatcher.hunterMap).isEmpty();
-    assertThat(dispatcher.pausedActions).hasSize(1).containsValue(action);
+    assertThat(dispatcher.pausedActions).hasSize(1);
+    assertThat(dispatcher.pausedActions.containsValue(action)).isTrue();
     verify(hunter).detach(action);
     verify(hunter).cancel();
   }
@@ -498,8 +493,10 @@ public class DispatcherTest {
     when(hunter.getActions()).thenReturn(Arrays.asList(action1, action2));
     dispatcher.hunterMap.put(URI_KEY_1, hunter);
     dispatcher.performPauseTag("tag1");
-    assertThat(dispatcher.hunterMap).hasSize(1).containsValue(hunter);
-    assertThat(dispatcher.pausedActions).hasSize(1).containsValue(action1);
+    assertThat(dispatcher.hunterMap).hasSize(1);
+    assertThat(dispatcher.hunterMap.containsValue(hunter)).isTrue();
+    assertThat(dispatcher.pausedActions).hasSize(1);
+    assertThat(dispatcher.pausedActions.containsValue(action1)).isTrue();
     verify(hunter).detach(action1);
     verify(hunter, never()).detach(action2);
   }

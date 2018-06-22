@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,17 +38,13 @@ final class PicassoSampleAdapter extends BaseAdapter {
                 .setContent(remoteViews);
 
         Notification notification = builder.getNotification();
-        // Bug in NotificationCompat that does not set the content.
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.GINGERBREAD_MR1) {
-          notification.contentView = remoteViews;
-        }
 
         NotificationManager notificationManager =
             (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(NOTIFICATION_ID, notification);
 
         // Now load an image for this notification.
-        Picasso.with(activity) //
+        Picasso.get() //
             .load(Data.URLS[new Random().nextInt(Data.URLS.length)]) //
             .resizeDimen(R.dimen.notification_icon_width_height,
                 R.dimen.notification_icon_width_height) //
@@ -73,7 +68,7 @@ final class PicassoSampleAdapter extends BaseAdapter {
 
   private final LayoutInflater inflater;
 
-  public PicassoSampleAdapter(Context context) {
+  PicassoSampleAdapter(Context context) {
     inflater = LayoutInflater.from(context);
   }
 

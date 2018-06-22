@@ -25,13 +25,13 @@ import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
+import static com.google.common.truth.Truth.assertThat;
 import static com.squareup.picasso.Picasso.LoadedFrom.NETWORK;
 import static com.squareup.picasso.Picasso.RequestTransformer.IDENTITY;
 import static com.squareup.picasso.TestUtils.URI_KEY_1;
 import static com.squareup.picasso.TestUtils.makeBitmap;
 import static com.squareup.picasso.TestUtils.mockCallback;
 import static com.squareup.picasso.TestUtils.mockImageViewTarget;
-import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -60,17 +60,19 @@ import static org.mockito.Mockito.when;
   @Test public void errorWithNoResourceIsNoop() throws Exception {
     Callback callback = mockCallback();
     RemoteViewsAction action = createAction(callback);
-    action.error(null);
+    Exception e = new RuntimeException();
+    action.error(e);
     verifyZeroInteractions(remoteViews);
-    verify(callback).onError();
+    verify(callback).onError(e);
   }
 
   @Test public void errorWithResourceSetsResource() throws Exception {
     Callback callback = mockCallback();
     RemoteViewsAction action = createAction(1, callback);
-    action.error(null);
+    Exception e = new RuntimeException();
+    action.error(e);
     verify(remoteViews).setImageViewResource(1, 1);
-    verify(callback).onError();
+    verify(callback).onError(e);
   }
 
   @Test public void clearsCallbackOnCancel() throws Exception {
